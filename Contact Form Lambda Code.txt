@@ -1,0 +1,45 @@
+import json
+import boto3
+import uuid
+from datetime import datetime
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('ContactFormSubmissions')
+
+def lambda_handler(event, context):
+    try:
+        data = json.loads(event["body"])
+        name = data["name"]
+        email = data["email"]
+        message = data["message"]
+
+        # Add timestamp
+        timestamp = datetime.utcnow().isoformat()
+
+        # Save to DynamoDB
+        table.put_item(Item={
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "email": email,
+            "message": message,
+            "timestamp": timestamp
+        })
+
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Methods": "OPTIONS,POST"
+            },
+            "body": json.dumps({ "message": "Form submitted successfully!" })
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            },
+            "body": json.dumps({ "error": str(e) })
+        }
